@@ -1,4 +1,7 @@
 openai>=1.30.0
 psycopg[binary]>=3.2.0
 python-dotenv>=1.0.1
-python-telegram-bot>=21.2
+python-telegram-bot[job-queue]>=21.2
+yfinance>=0.2.40
+httpx>=0.27.0
+tzdata>=2024.1

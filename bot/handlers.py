@@ -6,13 +6,14 @@ from typing import Any
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from bot.brief import build_daily_brief
 from bot.config import settings
 from bot.memory import MemoryStore
 from bot.prompts import build_system_prompt
 
 
 logger = logging.getLogger(__name__)
-VALID_MODES = {"career", "ielts"}
+VALID_MODES = {"career", "ielts", "general"}
 
 
 def build_handlers(memory: MemoryStore, nim_client: Any) -> dict[str, Any]:
@@ -25,8 +26,8 @@ def build_handlers(memory: MemoryStore, nim_client: Any) -> dict[str, Any]:
         await update.message.reply_text(
             "NVIDIA Telegram 助理已啟動。\n"
             f"目前模式：`{mode}`\n\n"
-            "可用指令：/mode career, /mode ielts, /ielts_speaking, /ielts_writing, "
-            "/ielts_new, /ielts_eval, /ielts_status, /clear",
+            "可用指令：/brief, /mode general, /mode career, /mode ielts, "
+            "/ielts_speaking, /ielts_writing, /ielts_new, /ielts_eval, /ielts_status, /clear",
             parse_mode="Markdown",
         )
 
@@ -34,6 +35,8 @@ def build_handlers(memory: MemoryStore, nim_client: Any) -> dict[str, Any]:
         if not update.message:
             return
         await update.message.reply_text(
+            "/brief - 立即產生半導體晨報\n"
+            "/mode general - 切換到通用聊天\n"
             "/mode career - 切換到職涯顧問\n"
             "/mode ielts - 切換到雅思教練\n"
             "/ielts_speaking - 切換到口說練習\n"
@@ -54,7 +57,8 @@ def build_handlers(memory: MemoryStore, nim_client: Any) -> dict[str, Any]:
 
         mode = context.args[0]
         memory.set_mode(chat_id, mode)
-        reply = "已切換到職涯顧問模式。" if mode == "career" else "已切換到雅思教練模式。"
+        mode_names = {"career": "職涯顧問", "ielts": "雅思教練", "general": "通用聊天"}
+        reply = f"已切換到{mode_names.get(mode, mode)}模式。"
         await update.message.reply_text(reply)
 
     async def clear(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -110,6 +114,18 @@ def build_handlers(memory: MemoryStore, nim_client: Any) -> dict[str, Any]:
         if state.get("last_question"):
             lines.append(f"上一題：{state['last_question']}")
         await update.message.reply_text("\n".join(lines))
+
+    async def brief(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if not update.effective_chat or not update.message:
+            return
+        await update.message.reply_text("產生半導體晨報中…")
+        try:
+            text = await build_daily_brief(nim_client)
+        except Exception as exc:  # pragma: no cover
+            logger.exception("brief failed")
+            await update.message.reply_text(f"產生晨報失敗：{exc}")
+            return
+        await update.message.reply_text(text, disable_web_page_preview=True)
 
     async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not update.effective_chat or not update.message or not update.message.text:
@@ -180,6 +196,7 @@ def build_handlers(memory: MemoryStore, nim_client: Any) -> dict[str, Any]:
         "ielts_writing": ielts_writing,
         "ielts_eval": ielts_eval,
         "ielts_status": ielts_status,
+        "brief": brief,
         "message": handle_text,
     }
 

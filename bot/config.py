@@ -30,6 +30,16 @@ class Settings:
     max_history_messages: int = int(os.getenv("MAX_HISTORY_MESSAGES", "12"))
     port: int = int(os.getenv("PORT", "8080"))
 
+    # 半導體晨報
+    alphavantage_api_key: str = os.getenv("ALPHAVANTAGE_API_KEY", "")
+    target_chat_id: str = os.getenv("TARGET_CHAT_ID", "")
+    brief_hour: int = int(os.getenv("BRIEF_HOUR", "8"))
+    brief_minute: int = int(os.getenv("BRIEF_MINUTE", "0"))
+    brief_tz: str = os.getenv("BRIEF_TZ", "Asia/Taipei")
+    holdings_path: str = os.getenv(
+        "HOLDINGS_PATH", str(BASE_DIR / "bot" / "holdings.json")
+    )
+
     def require_telegram(self) -> None:
         if not self.telegram_bot_token:
             raise ValueError("Missing TELEGRAM_BOT_TOKEN in .env")

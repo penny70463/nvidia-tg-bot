@@ -1,0 +1,4 @@
+[
+  { "ticker": "SMH", "weight": 0.5 },
+  { "ticker": "VOO", "weight": 0.5 }
+]
